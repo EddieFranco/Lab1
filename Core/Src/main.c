@@ -64,27 +64,75 @@ int main(void)
 {
 HAL_Init(); // Reset of all peripherals, init the Flash and Systick
 SystemClock_Config(); //Configure the system clock
-/* This example uses HAL library calls to control
-the GPIOC peripheral. You’ll be redoing this code
-with hardware register access. */
+
+//enable the GPIOC peripheral clock
 RCC->AHBENR |= RCC_AHBENR_GPIOCEN ;
 
+//Set the pins to general-purpose output mode in the MODER register.
 GPIOC->MODER|=(GPIO_MODER_MODER6_0|GPIO_MODER_MODER7_0);
-	
-GPIOC->OTYPER&= ~(GPIO_OTYPER_OT_6 |GPIO_OTYPER_OT_7 );
-	
+// Set the pins to push-pull output type in the OTYPER register
+GPIOC->OTYPER &= ~(GPIO_OTYPER_OT_6 |GPIO_OTYPER_OT_7 );
+// Set the pins to low speed in the OSPEEDR register.	
 GPIOC->OSPEEDR &= ~(GPIO_OSPEEDR_OSPEEDR6_Msk | GPIO_OSPEEDR_OSPEEDR7_Msk);
-	
+// Set to no pull-up/down resistors in the PUPDR register
 GPIOC->PUPDR &= ~(GPIO_PUPDR_PUPDR6_Msk | GPIO_PUPDR_PUPDR7_Msk);	
-
+//Initialize one pin logic high and the other to low.
 GPIOC->BSRR  = GPIO_BSRR_BS_6 ;
 GPIOC->BSRR = GPIO_BSRR_BR_7 ;
+	
+
+//while (1) {
+// Toggle both pin output states within the endless loop.
+		//GPIOC->ODR ^= (GPIO_ODR_6 | GPIO_ODR_7); // Toggle PC8 and PC9
+		//HAL_Delay(200); // Delay 200ms
+//}
+
+
+//enable the clock to the appropriate GPIO peripheral
+RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
+
+//Set the pins to input mode in the MODER register.
+GPIOA->MODER &= ~ (GPIO_MODER_MODER0_Msk);
+//Set the pins to low speed in the OSPEEDR register
+GPIOA->OSPEEDR &= ~(GPIO_OSPEEDR_OSPEEDR0_Msk);
+//Enable the pull-down resistor in the PUPDR register
+GPIOA->OSPEEDR &= ~(GPIO_PUPDR_PUPDR0_Msk);
+
+
+uint32_t debouncer = 0;
+uint32_t LED = 0;
 
 while (1) {
-// Toggle the output state of both PC8 and PC9
-		GPIOC->ODR ^= (GPIO_ODR_6 | GPIO_ODR_7); // Toggle PC8 and PC9
-	HAL_Delay(200); // Delay 200ms
+	
+			int button = GPIOA->IDR & 1;
+			debouncer = (debouncer << 1); // Always shift every loop iteration
+	
+			if (button) { // If input signal is set/high
+			debouncer |= 0x01; // Set lowest bit of bit-vector
+			}
+			
+		
+			 if (debouncer == 0x7FFFFFFF) {
+				 // This code triggers only once when transitioning to steady high!
+					if (LED == 0){
+					GPIOC->BSRR = GPIO_BSRR_BR_6; // Set PC6 low
+					GPIOC->BSRR = GPIO_BSRR_BS_7; // Set PC7 high
+					LED = 1;
+					}
+				else{
+        GPIOC->BSRR = GPIO_BSRR_BS_6; // Set PC6 high
+        GPIOC->BSRR = GPIO_BSRR_BR_7; // Set PC7 low
+        LED = 0;
+				}
+    }
+			
+  
+  HAL_Delay(1);
+			// When button is bouncing the bit-vector value is random since bits are set when
+			//the button is high and not when it bounces low.
+				
 }
+
 
 
 }
