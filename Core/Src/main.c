@@ -83,9 +83,8 @@ GPIOC->BSRR = GPIO_BSRR_BR_7 ;
 while (1) {
 // Toggle the output state of both PC8 and PC9
 		GPIOC->ODR ^= (GPIO_ODR_6 | GPIO_ODR_7); // Toggle PC8 and PC9
-	HAL_Delay(1000); // Delay 200ms
+	HAL_Delay(200); // Delay 200ms
 }
-
 
 
 }
